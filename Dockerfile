@@ -9,6 +9,6 @@ COPY src .
 RUN apk add php
 # vamos realizar los comandos que queramos que corran en nuestra aplicacion
 # esto es que queremos "php index.php" cuando carguemos la imagen cogeremos el binario de php
-ENTRYPOINT /usr/bin/php
+ENTRYPOINT ["/usr/bin/php"]
 #incorporamos las opciones para ejecutar el comando -S para el interfaz de red 0.0.0.0 son todos y el puerto.
-CMD -f index.php -S 0.0.0.0:8080
+CMD ["-f", "index.php", "-S", "0.0.0.0:8080"]
