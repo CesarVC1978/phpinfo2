@@ -1,0 +1,5 @@
+#para evitar que accedan al docker engine
+**/*
+#excepciones que si pueden acceder.
+!src
+!Dockerfile
