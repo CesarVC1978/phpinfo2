@@ -1,0 +1,34 @@
+networks:
+  phpinfo2:
+    internal: true
+services:
+  phpinfo2:
+    deploy:
+      # mode replicated indcia varios contenedores en la misma maquina virtual
+      # mode global es un unico contenedor en la misma maquina virtual
+      mode: replicated 
+      placement: 
+        constrains:
+        - node.role == worker
+      replicas: 2
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: 100m
+        reservations:
+          cpus: "0.1"
+          memory: 100m
+    expose:
+    - 8080
+    healthcheck:
+      interval: 10s
+      retries: 3
+      start_period: 30s
+      test: php -r "print file_get_contents('http://localhost:8080/)";
+      timeout: 1s
+    image: CesarVC1978/phpinfo2:latest
+    networks:
+    - phpinfor2
+    port:
+  - 8080:8080
+version: "3.8"
