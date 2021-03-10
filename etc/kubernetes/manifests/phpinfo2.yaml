@@ -1,0 +1,83 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phpinfo2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: phpinfo2
+  template:
+    metadata:
+      labels:
+        app: phpinfo2
+    spec:
+      containers:
+      - name: phpinfo2
+        image: CesarVC1978/phpinfo2:latest
+        imagePullPolicy: Always
+        livenessProbe: 
+          tcpSocket:
+            port: 8080
+          failureThreshold: 3
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        port:
+        - containerPort: 8080
+#        redinessProbe: 
+#          httpGet:
+#            path: /
+#            port: 8080
+#          failureThreshold: 3
+#          periodSeconds: 10
+#          successThreshold: 1
+#          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 100m
+            memory: 100m
+          requests:
+            cpu: 100m
+            memory: 100m
+---
+# politica de red de kubernetes. Es el cortafuegos.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-denay-all
+spec:
+  podSelector: {}
+# politicas que niegan el acceso a todos los pods entre todo  
+  policyTypes:
+  - Ingress
+---
+# regla aperturista
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: phpinfo2
+spec:
+  ingress:
+  - ports:
+    - port: 8080
+  podSelector:
+    matchlabels:
+      app: phpinfo2
+  policyTypes:
+  - Ingress
+---
+# servicio para balanceador de carga hacia los pods
+apiVersion: v1
+kind: Service
+metadata:
+  name: phpinfo2
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: phpinfo2
+  type: ClusterIP
+---
