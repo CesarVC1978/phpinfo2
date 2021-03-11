@@ -25,7 +25,7 @@ jobs:
             sleep 10
             docker logs testcontainer 2>& 1 | grep 'PHP .* Development Server .* started' && break
           done
-swarm:
+  swarm:
     runs-on: ubuntu-18.04
     steps:
     - name: checkout
@@ -58,6 +58,70 @@ swarm:
             sleep 10
             docker services ${project}_${project} 2>$ 1 | grep 'PHP .* Development Server .* started' && break
           done
-
-
-          
+  kubernetes:
+    runs-on: ubuntu-18.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+    - name: test
+      run: |
+        set -x
+        docker build -t CesarVC1978/phpinfo2:testing .
+        #instalar kubernetes en ubuntu
+        sudo apt-get update
+        sudo apt-get install -y docker.io
+        sudo systemctl enable --now docker
+        curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+        echo deb http://apt.kubernetes.io/ kubernetes-xenial main | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+        sudo app-get update
+        sudo apt-get install -y --allow-downgrades kubelet=1.18.14-00 kubeadm=1.18.14-00 kubectl=1.18.14-00
+        sudo systemctl enable --now kuberlet
+        # inicializar kubernetes
+        #capturar ip de la maquina virtual lider y guardarla en al variable
+        ip_leader=$( ip r | grep default | awk '{ print $9 }' )
+        echo ${ip_leader} kube-apiserver | sudo tee -a /etc/hosts
+        sudo swapoff --all
+        sudo kubeadm init --upload-certs --control-plane-endpoint kube-apiserver --pod -network-cidr 192.168.0.0/16 --ignore-preflight-errors all
+        #copiamos las credenciales a nuestro directorio.
+        mkdir -p ${HOME}/.kube
+        sudo cp /etc/kubernetes/admin.conf ${HOME}/.kube/config
+        sudo chown -R $( id -u ):$( ide -g ) ${HOME}/.kube
+        # vamos a crear la red para que kubernetes pueda desplegar las aplicaciones.
+        kubectl apply -f https://docs.projectcalico.org/v3.17/manifests/calico.yaml
+        #comprobar que el cluster de kubernetes esta listo
+        while true
+          do \
+            kubectl get node | grep Ready | grep -v NotReady && break 
+            sleep 10
+          done
+        #limpiar la configuracion
+        sudo sed -i /kube-apiserver/d /etc/hosts
+        sudo sed -i /127.0.0.1.*localhost/s/$/' 'kube-apiserver/ /etc/hosts
+        #habilitar el master
+        master=$( kubectl get node | grep master | awk '{ print $1 }' )
+        #el siguiente comando nos va a permitir desplegar aplicaciones en un master
+        kubectl taint node ${master} node-role.kubernetes.io/master:NoSchedule-
+                
+        project=phpinfo2
+        compose=etc/kubernetes/manifests/${project}.yaml
+        # el siguiente comando es para sustituir el texto latest por testing. para ello usamos el comando /s
+        sed -i /image:/s/latest/testing/ ${compose}
+        sed -i /imagePullPolicy/s/Always/Never/ ${compose}
+        # despliegue en openshift
+        # oc apply -f ${compose}
+        # Despliegue en kubernetes
+        kubectl apply -f ${compose}
+        # Despliegue en swarm
+        # docker stack deploy -c ${compose} ${project}
+        while true
+          do \
+            sleep 10
+            #\([0-9]\)/\1 para comprobar el numero de detro del 
+            #parentesis es igual que el mismo y verificar que todo esta desplegado
+            kubectl get deploy | grep "${project}.*\([0-9]\)/\1" && break
+          done
+        while true
+          do \
+            sleep 10
+            kubectl logs deploy/${project}_${project} 2>$ 1 | grep 'PHP .* Development Server .* started' && break
+          done
