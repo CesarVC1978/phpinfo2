@@ -25,39 +25,6 @@ jobs:
             sleep 10
             docker logs testcontainer 2>& 1 | grep 'PHP .* Development Server .* started' && break
           done
-  swarm:
-    runs-on: ubuntu-18.04
-    steps:
-    - name: checkout
-      uses: actions/checkout@v2
-    - name: test
-      run: |
-        set -x
-        docker build -t CesarVC1978/phpinfo2:testing .
-        docker swarm init
-        project=phpinfo2
-        compose=etc/swarm/manifests/${project}.yaml
-        # el siguiente comando es para sustituir el texto latest por testing. para ello usamos el comando /s
-        sed -i /image:/s/latest/testing/ ${compose}
-        sed -i /node.role/s/worker/manager/ ${compose}
-        # despliegue en openshift
-        # oc apply -f ${compose}
-        # Despliegue en kubernetes
-        # kubectl apply -f ${compose}
-        # Despliegue en swarm
-        docker stack deploy -c ${compose} ${project}
-        while true
-          do \
-            sleep 10
-            #\([0-9]\)/\1 para comprobar el numero de detro del 
-            #parentesis es igual que el mismo y verificar que todo esta desplegado
-            docker services ls | grep "${project}.*\([0-9]\)/\1" && break
-          done
-        while true
-          do \
-            sleep 10
-            docker logs ${project}_${project} 2>$ 1 | grep 'PHP .* Development Server .* started' && break
-          done
   kubernetes:
     runs-on: ubuntu-18.04
     steps:
@@ -124,4 +91,37 @@ jobs:
           do \
             sleep 10
             kubectl logs deploy/${project}_${project} 2>$ 1 | grep 'PHP .* Development Server .* started' && break
+          done
+  swarm:
+    runs-on: ubuntu-18.04
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+    - name: test
+      run: |
+        set -x
+        docker build -t CesarVC1978/phpinfo2:testing .
+        docker swarm init
+        project=phpinfo2
+        compose=etc/swarm/manifests/${project}.yaml
+        # el siguiente comando es para sustituir el texto latest por testing. para ello usamos el comando /s
+        sed -i /image:/s/latest/testing/ ${compose}
+        sed -i /node.role/s/worker/manager/ ${compose}
+        # despliegue en openshift
+        # oc apply -f ${compose}
+        # Despliegue en kubernetes
+        # kubectl apply -f ${compose}
+        # Despliegue en swarm
+        docker stack deploy -c ${compose} ${project}
+        while true
+          do \
+            sleep 10
+            #\([0-9]\)/\1 para comprobar el numero de detro del 
+            #parentesis es igual que el mismo y verificar que todo esta desplegado
+            docker services ls | grep "${project}.*\([0-9]\)/\1" && break
+          done
+        while true
+          do \
+            sleep 10
+            docker logs ${project}_${project} 2>$ 1 | grep 'PHP .* Development Server .* started' && break
           done
