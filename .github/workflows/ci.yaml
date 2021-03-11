@@ -56,7 +56,7 @@ jobs:
         while true
           do \
             sleep 10
-            docker services ${project}_${project} 2>$ 1 | grep 'PHP .* Development Server .* started' && break
+            docker logs ${project}_${project} 2>$ 1 | grep 'PHP .* Development Server .* started' && break
           done
   kubernetes:
     runs-on: ubuntu-18.04
@@ -68,12 +68,12 @@ jobs:
         set -x
         docker build -t CesarVC1978/phpinfo2:testing .
         #instalar kubernetes en ubuntu
-        sudo apt-get update
-        sudo apt-get install -y docker.io
-        sudo systemctl enable --now docker
+        sudo apt-get update -y
+        # sudo apt-get install -y docker.io
+        # sudo systemctl enable --now docker
         curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
         echo deb http://apt.kubernetes.io/ kubernetes-xenial main | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
-        sudo app-get update
+        sudo app-get update -y
         sudo apt-get install -y --allow-downgrades kubelet=1.18.14-00 kubeadm=1.18.14-00 kubectl=1.18.14-00
         sudo systemctl enable --now kuberlet
         # inicializar kubernetes
